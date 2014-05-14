@@ -1,0 +1,1 @@
+This AOSP patch is to enhance the security features in Android framework, by adding a new Service which would let the user configure permission to the apps. Also, this work tries to provide a solution to permission re-delegation attack in Android.
