@@ -4332,11 +4332,11 @@ public final class ActivityManagerService extends ActivityManagerNative
         if (permission == null) {
             return PackageManager.PERMISSION_DENIED;
         }
-        /*
+        
         boolean isBlocked = false;
         // *** ***
         // Added a check from the AppAccessService to find if the permission is blocked by user
-        if(mSystemReady && isAppAccessServiceUp) {    
+        if(isAppAccessServiceUp) {    
             try {
                 isBlocked = mAppAccessService.isPermissionBlocked(permission, uid);
             } catch (RemoteException e) {  
@@ -4349,7 +4349,7 @@ public final class ActivityManagerService extends ActivityManagerNative
             Slog.e("BLOCKEDPERMISSION", "User blocked " + permission + " for process with uid " + uid );
             return PackageManager.PERMISSION_DENIED;
         // *** ***
-        } */else {
+        } else {
             return checkComponentPermission(permission, pid, uid, -1, true);
         }
     }
