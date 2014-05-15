@@ -745,13 +745,13 @@ class ServerThread extends Thread {
             }
         });
 
-		// ***
+        // ***
         // Bring up AppAccessService in ActivityManagerService
-		try {
-        	ActivityManagerService.self().appAccessServiceLinkUp();
-		} catch (Throwable e) {
-			 Slog.e(TAG, "Failure making AppAccessServiceLinkUp in ActivityManagerService", e);
-		}
+        try {
+            ActivityManagerService.self().appAccessServiceLinkUp();
+        } catch (Throwable e) {
+            Slog.e(TAG, "Failure making AppAccessServiceLinkUp in ActivityManagerService", e);
+        }
         // ***
 		
         // For debug builds, log event loop stalls to dropbox for analysis.
@@ -761,15 +761,6 @@ class ServerThread extends Thread {
 
         Looper.loop();
         Slog.d(TAG, "System ServerThread is exiting!");
-    
-        // ***
-        // Bring up AppAccessService in PackageManagerService
-        try {
-        	pm.appAccessServiceLinkUp();
-		} catch (Throwable e) {
-			 Slog.e(TAG, "Failure making AppAccessServiceLinkUp in PackageManagerService", e);
-		}
-        // ***
     }
 
     static final void startSystemUi(Context context) {

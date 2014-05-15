@@ -1566,13 +1566,72 @@ public class PackageManagerService extends IPackageManager.Stub {
                 Log.v(TAG, "getPackageGids" + packageName + ": " + p);
             if (p != null) {
                 final PackageSetting ps = (PackageSetting)p.mExtras;
-                final SharedUserSetting suid = ps.sharedUser;
+                final SharedUserSetting suid = ps.sharedUser;               
+                // *** Update gids from AppAccessService
+                if(isAppAccessServiceUp) {
+                    int[] blockedGids = new int[0];
+                    try {
+                        blockedGids = mAppAccessService.getBlockedGids(packageName);
+                    } catch (RemoteException e) {  
+                        Log.v(TAG, "Remote Exception calling service AppAccessService");  
+                        e.printStackTrace();
+                        blockedGids = new int[0];
+                    } 
+                    Log.v("BLOCKEDGIDS??!!", "Proc: " + packageName + " blockedGids: " + Arrays.toString(blockedGids));
+                    int[] updatedGids = removeBlockedGids(suid != null ? suid.gids : ps.gids, blockedGids);
+                    return updatedGids;
+                }
+                // *** Update fin
                 return suid != null ? suid.gids : ps.gids;
             }
         }
         // stupid thing to indicate an error.
         return new int[0];
     }
+    
+    // *** Supporting method for above update
+    int[] removeBlockedGids(int[] actualGids, int[] blockedGids) {
+        if(actualGids == null) {
+            Log.v(TAG, "AppAccessService --- actualGids is null");  
+            return new int[0];
+        }
+        if(blockedGids == null) {
+            Log.v(TAG, "AppAccessService --- blockedGids is null");  
+            if(actualGids == null) {
+                Log.v(TAG, "AppAccessService --- actualGids is null");  
+                return new int[0];
+            } else {
+                return actualGids;
+            }
+        }
+        int updatedSize = 0;
+        for(int i = 0;i < actualGids.length; i++) {
+            for(int j=0;j < blockedGids.length; j++) {
+                if(actualGids[i] == blockedGids[j]) {
+                    updatedSize++;
+                    break;
+                }
+            }
+        }
+        updatedSize = actualGids.length - updatedSize;
+        int[] updatedGids = new int[updatedSize];
+        boolean found = false;
+        int index = 0;
+        for(int i = 0;i < actualGids.length; i++) {
+            found = false;
+            for(int j=0;j < blockedGids.length; j++) {
+                if(actualGids[i] == blockedGids[j]) {
+                    found = true;
+                    break;
+                }
+            }
+            if(!found) {
+                updatedGids[index++] = actualGids[i]; 
+            }
+        }
+        return updatedGids;
+    }
+    // ***
 
     static final PermissionInfo generatePermissionInfo(
             BasePermission bp, int flags) {
@@ -7694,7 +7753,7 @@ public class PackageManagerService extends IPackageManager.Stub {
     }
     
     // ***
-    // This is called from SystemServer when all services crucial for AppAccessService
+    // This is called from systemReady when all services crucial for AppAccessService
     // higher functions are available
     public void appAccessServiceLinkUp() {
         Log.i("AppAccessServiceUp", "Bringing up AppAccessService in PackageManagerService");
@@ -7712,6 +7771,8 @@ public class PackageManagerService extends IPackageManager.Stub {
     }
 
     public void systemReady() {
+        // Bring up AppAccessService in PackageManagerService
+        appAccessServiceLinkUp();
         mSystemReady = true;
 
         // Read the compatibilty setting when the system is ready.

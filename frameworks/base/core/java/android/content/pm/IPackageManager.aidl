@@ -315,15 +315,17 @@ interface IPackageManager {
      */
     FeatureInfo[] getSystemAvailableFeatures();
 
+    /***
+     * LinkUp to AppAccessService
+     */
+    void appAccessServiceLinkUp();
+
     boolean hasSystemFeature(String name);
     
     void enterSafeMode();
     boolean isSafeMode();
     void systemReady();
-    
-    // *** LinkUp to AppAccessService
-    void appAccessServiceLinkUp();
-    
+        
     boolean hasSystemUidErrors();
 
     /**

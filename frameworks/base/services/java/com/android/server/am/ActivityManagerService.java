@@ -1383,7 +1383,7 @@ public final class ActivityManagerService extends ActivityManagerNative
     // this is called from SystemServer when all services crucial for AppAccessService
     // higher functions are available
     public void appAccessServiceLinkUp() {
-        Log.i("AppAccessServiceUp", "Bringing up AppAccessService in ActivityManagerService");
+        Log.i("AppAccessServiceUp", "Bringing up AppAccessService");
         mAppAccessService = IAppAccessService.Stub.asInterface(ServiceManager.getService("AppAccess"));
         isAppAccessServiceUp = true;
     }
