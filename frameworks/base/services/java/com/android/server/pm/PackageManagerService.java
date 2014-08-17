@@ -1589,6 +1589,10 @@ public class PackageManagerService extends IPackageManager.Stub {
         return new int[0];
     }
     
+    public boolean isAppAccessServiceUpCheck() {
+        return isAppAccessServiceUp;
+    }
+    
     // *** Supporting method for above update
     int[] removeBlockedGids(int[] actualGids, int[] blockedGids) {
         if(actualGids == null) {

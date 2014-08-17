@@ -1,4 +1,4 @@
-/*AppAccessService.java */
+/* AppAccessService.java */
 package com.android.server;
 
 import java.io.BufferedReader;
@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Arrays;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -29,8 +30,14 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import android.app.Service;
+import android.app.AppGlobals;
 import android.content.Intent;
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
+import android.content.pm.IPackageManager;
+import android.content.pm.PackageManager;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.Environment;
 import android.os.IBinder;
 import android.os.Handler;
@@ -42,22 +49,22 @@ import android.util.Log;
 
 public class AppAccessService extends IAppAccessService.Stub {
 
-	private static AppAccessService mInstance;
-	private AppAccessWorkerThread mWorker;
+    private static AppAccessService mInstance;
+    private AppAccessWorkerThread mWorker;
     private AppAccessWorkerHandler mHandler;
     private Context mContext;
     private File mXmlFile = null;
+    private File mPermissionXmlFile = null;
     private final String ANDROID_PERMISSION = "android.permission.";
-	private final String PACKAGE = "package";
+    private final String PACKAGE = "package";
     private final String UID = "uid";
-	private final String APP_ACCESS_LIST = "app-access-list";
-	private final String BLOCKED_PERMISSION = "blocked-permission";
-	private final String NAME = "name";
+    private final String APP_ACCESS_LIST = "app-access-list";
+    private final String BLOCKED_PERMISSION = "blocked-permission";
+    private final String NAME = "name";
     private static final String TAG = "AppAccessService";
     private HashMap<Integer, String> packageUidMap;
     private HashMap<String, ArrayList<String>> packagePermissionsMap;
-    private static final Map<String, ArrayList<Integer>> permissionGidMap;
-    static
+    private final Map<String, ArrayList<Integer>> permissionGidMap;
     {
         permissionGidMap = new HashMap<String, ArrayList<Integer>>();
         permissionGidMap.put("BLUETOOTH_ADMIN", new ArrayList<Integer>() {
@@ -138,15 +145,15 @@ public class AppAccessService extends IAppAccessService.Stub {
     }
 
     public static AppAccessService getInstance(Context context)
-	{
-		if(context == null && mInstance != null)
-			return mInstance;
+    {
+        if(context == null && mInstance != null)
+            return mInstance;
 
-		if(mInstance == null)
-			mInstance = new AppAccessService(context);
-				
-		return mInstance;
-	}
+        if(mInstance == null)
+            mInstance = new AppAccessService(context);
+                
+        return mInstance;
+    }
 
     private class AppAccessWorkerThread extends Thread {
         public AppAccessWorkerThread(String name) {
@@ -200,156 +207,151 @@ public class AppAccessService extends IAppAccessService.Stub {
         packagePermissionsMap.put(packageName, perms);
     }
 
-	private boolean initFile() {
+    private boolean initFile() {
 
         packagePermissionsMap = new HashMap<String, ArrayList<String>>();
         packageUidMap = new HashMap<Integer, String>();
 
-		File dataDir = Environment.getDataDirectory();
-		File systemDir = new File(dataDir, "system");
-		//File dataDir = new File(getApplicationInfo().dataDir);
-		mXmlFile = new File(systemDir, "acl.xml");
-		try {
-			if (!mXmlFile.exists()) {
-				mXmlFile.createNewFile();
-			}
-			Log.i(TAG, "XML File created " + mXmlFile.getAbsolutePath());
-			DocumentBuilderFactory docFactory = DocumentBuilderFactory
-					.newInstance();
-			DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+        File dataDir = Environment.getDataDirectory();
+        File systemDir = new File(dataDir, "system");
+        //File dataDir = new File(getApplicationInfo().dataDir);
+        mXmlFile = new File(systemDir, "acl.xml");
+        try {
+            if (!mXmlFile.exists()) {
+                mXmlFile.createNewFile();
+            }
+            Log.i(TAG, "XML File created " + mXmlFile.getAbsolutePath());
+            DocumentBuilderFactory docFactory = DocumentBuilderFactory
+                    .newInstance();
+            DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
 
-			// root element
-			Document doc = docBuilder.newDocument();
-			Element rootElement = doc.createElement(APP_ACCESS_LIST);
-			doc.appendChild(rootElement);
+            // root element
+            Document doc = docBuilder.newDocument();
+            Element rootElement = doc.createElement(APP_ACCESS_LIST);
+            doc.appendChild(rootElement);
 
-			// write the content into xml file
-			TransformerFactory transformerFactory = TransformerFactory
-					.newInstance();
-			Transformer transformer = transformerFactory.newTransformer();
-			DOMSource source = new DOMSource(doc);
-			StreamResult result = new StreamResult(mXmlFile);
+            // write the content into xml file
+            TransformerFactory transformerFactory = TransformerFactory
+                    .newInstance();
+            Transformer transformer = transformerFactory.newTransformer();
+            DOMSource source = new DOMSource(doc);
+            StreamResult result = new StreamResult(mXmlFile);
 
-			// Output to console for testing
-			// StreamResult result = new StreamResult(System.out);
+            // Output to console for testing
+            // StreamResult result = new StreamResult(System.out);
 
-			transformer.transform(source, result);
-			BufferedReader br = new BufferedReader(new FileReader(mXmlFile));
-			String line = null;
-			while ((line = br.readLine()) != null) {
-				Log.i(TAG, line);
-			}
-			br.close();
-			return true;
-		} catch (IOException e) {
-			e.printStackTrace();
-			Log.e(TAG, "Unable to create acl.xml");
-			return false;
-		} catch (ParserConfigurationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			Log.e(TAG, "Error Parsing");
-			return false;
-		} catch (TransformerConfigurationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			Log.e(TAG, "Error Transforming");
-			return false;
-		} catch (TransformerException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			Log.e(TAG, "Error Transforming");
-			return false;
-		}
-	}
+            transformer.transform(source, result);
+            BufferedReader br = new BufferedReader(new FileReader(mXmlFile));
+            String line = null;
+            while ((line = br.readLine()) != null) {
+                Log.i(TAG, line);
+            }
+            br.close();
+            return true;
+        } catch (IOException e) {
+            e.printStackTrace();
+            Log.e(TAG, "Unable to create acl.xml");
+            return false;
+        } catch (ParserConfigurationException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            Log.e(TAG, "Error Parsing");
+            return false;
+        } catch (TransformerConfigurationException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            Log.e(TAG, "Error Transforming");
+            return false;
+        } catch (TransformerException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            Log.e(TAG, "Error Transforming");
+            return false;
+        }
+    }
 
-	public boolean updateBlockedPermissions(String pkgName, int uid,
-			 List<String> blockedPermissions) {
-		DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
-		DocumentBuilder dBuilder;
-		try {
-			dBuilder = dbFactory.newDocumentBuilder();
-			Document doc = dBuilder.parse(mXmlFile);
-			doc.getDocumentElement().normalize();
-			Element rootElement = doc.getDocumentElement();
-			NodeList packageList = doc.getElementsByTagName(PACKAGE);
-			Element mPackage = null;
-			boolean isPackagePresent = false;
-			for (int i = 0; i < packageList.getLength(); i++) {
-				Node nNode = packageList.item(i);
-				if (nNode.getNodeType() == Node.ELEMENT_NODE) {
-					Element eElement = (Element) nNode;
-					if (eElement.getAttribute(NAME).equalsIgnoreCase(pkgName)) {
+    public boolean updateBlockedPermissions(String pkgName, int uid,
+             List<String> blockedPermissions) {
+        DocumentBuilderFactory dbFactory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder dBuilder;
+        try {
+            dBuilder = dbFactory.newDocumentBuilder();
+            Document doc = dBuilder.parse(mXmlFile);
+            doc.getDocumentElement().normalize();
+            Element rootElement = doc.getDocumentElement();
+            NodeList packageList = doc.getElementsByTagName(PACKAGE);
+            Element mPackage = null;
+            boolean isPackagePresent = false;
+            for (int i = 0; i < packageList.getLength(); i++) {
+                Node nNode = packageList.item(i);
+                if (nNode.getNodeType() == Node.ELEMENT_NODE) {
+                    Element eElement = (Element) nNode;
+                    if (eElement.getAttribute(NAME).equalsIgnoreCase(pkgName)) {
                         //mPackage = eElement;
-						//isPackagePresent = true;
+                        //isPackagePresent = true;
                         // Edit - remove Node
-						rootElement.removeChild(nNode);
+                        rootElement.removeChild(nNode);
                         break;                        
-					}
-				}
-			}
-			mPackage = doc.createElement(PACKAGE);
+                    }
+                }
+            }
+            mPackage = doc.createElement(PACKAGE);
             // packageName
-			Attr packageAttr = doc.createAttribute(NAME);
-			packageAttr.setValue(pkgName);
-			mPackage.setAttributeNode(packageAttr);
+            Attr packageAttr = doc.createAttribute(NAME);
+            packageAttr.setValue(pkgName);
+            mPackage.setAttributeNode(packageAttr);
             // uid
             Attr uidAttr = doc.createAttribute(UID);
-			uidAttr.setValue(String.valueOf(uid));
-			mPackage.setAttributeNode(uidAttr);
-			rootElement.appendChild(mPackage);
+            uidAttr.setValue(String.valueOf(uid));
+            mPackage.setAttributeNode(uidAttr);
+            rootElement.appendChild(mPackage);
             addPackageUidToMap(pkgName, uid);
-    		NodeList permissionList = mPackage
-					.getElementsByTagName(BLOCKED_PERMISSION);
-			
-			// Every time new permissions to be added to blocked list
-			for (String perm : blockedPermissions) {
-				Element newPermission = doc.createElement(BLOCKED_PERMISSION);
-				newPermission.appendChild(doc.createTextNode(perm));
-				mPackage.appendChild(newPermission);
-			}
+            NodeList permissionList = mPackage
+                    .getElementsByTagName(BLOCKED_PERMISSION);
+            
+            // Every time new permissions to be added to blocked list
+            for (String perm : blockedPermissions) {
+                Element newPermission = doc.createElement(BLOCKED_PERMISSION);
+                newPermission.appendChild(doc.createTextNode(perm));
+                mPackage.appendChild(newPermission);
+            }
             updatePackagePermissions(pkgName, blockedPermissions);
 
-			TransformerFactory transformerFactory = TransformerFactory
-					.newInstance();
-			Transformer transformer = transformerFactory.newTransformer();
-			DOMSource source = new DOMSource(doc);
-			StreamResult result = new StreamResult(mXmlFile);
+            TransformerFactory transformerFactory = TransformerFactory
+                    .newInstance();
+            Transformer transformer = transformerFactory.newTransformer();
+            DOMSource source = new DOMSource(doc);
+            StreamResult result = new StreamResult(mXmlFile);
 
-			// Output to console for testing
-			// StreamResult result = new StreamResult(System.out);
+            // Output to console for testing
+            // StreamResult result = new StreamResult(System.out);
 
-			transformer.transform(source, result);
-			Log.i(TAG, "Xml file updated");
-			BufferedReader br = new BufferedReader(new FileReader(mXmlFile));
-			String line = null;
-			while ((line = br.readLine()) != null) {
-				Log.i(TAG, line);
-			}
-			br.close();
-			return true;
-		} catch (ParserConfigurationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return false;
-		} catch (SAXException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return false;
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return false;
-		} catch (TransformerConfigurationException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return false;
-		} catch (TransformerException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			return false;
-		}
-	}
+            transformer.transform(source, result);
+            Log.i(TAG, "Xml file updated");
+            BufferedReader br = new BufferedReader(new FileReader(mXmlFile));
+            String line = null;
+            while ((line = br.readLine()) != null) {
+                Log.i(TAG, line);
+            }
+            br.close();
+            return true;
+        } catch (ParserConfigurationException e) {
+            e.printStackTrace();
+            return false;
+        } catch (SAXException e) {
+            e.printStackTrace();
+            return false;
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        } catch (TransformerConfigurationException e) {
+            e.printStackTrace();
+            return false;
+        } catch (TransformerException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 
     public ArrayList<String> getBlockedPermissions(String pkgName) {
         if (packagePermissionsMap == null) {
@@ -370,7 +372,7 @@ public class AppAccessService extends IAppAccessService.Stub {
      *
      * @param  packageName the packageName of the app
      * @return blockedGids the list of blocked gids
-     */    
+     */
     public int[] getBlockedGids(String packageName) {
         List<Integer> blockedGids = new ArrayList<Integer>();
         ArrayList<String> blockedPermissions = getBlockedPermissions(packageName);
@@ -414,9 +416,63 @@ public class AppAccessService extends IAppAccessService.Stub {
         }
         else {
             if(packagePermissionsMap.get(pkgName).contains(permission)) {
-                Log.i(TAG, "*** PERMISSION BLOCKED *** Permission: "+ permission + ", Process: " + pkgName); 
+                Log.i(TAG, "*** PERMISSION BLOCKED *** Permission: "+ permission + ", Process: " + pkgName);
             }
             return packagePermissionsMap.get(pkgName).contains(permission);
         }
+    }
+
+    public void blockPermissionRedelegation(String callerApp, String calleeApp, List<String> callerPermissions, List<String> calleePermissions) {
+        Log.i(TAG,  "Caller permissions: "+ callerPermissions);
+        Log.i(TAG,  "Callee permissions: "+ calleePermissions);
+        Log.i(TAG, "PermissionGidMap: " + permissionGidMap);
+        List<Integer> callerGids = new ArrayList<Integer>();
+        List<Integer> calleeGids = new ArrayList<Integer>();
+
+        // Extract caller gids from permissions
+        /*for (String callerPermission : callerPermissions) {
+            String permission = callerPermission.replace(ANDROID_PERMISSION, "");
+            Log.i(TAG, permission);
+            if (permissionGidMap.containsKey(permission)) {
+                ArrayList<Integer> gids = permissionGidMap.get(permission);
+                for (Integer gid : gids) {
+                    callerGids.add(gid);
+                }
+            }
+        }
+
+        Log.i(TAG, "Caller gids: " + callerGids);
+
+        // Extract callee gids from permissions
+        for (String calleePermission : calleePermissions) {
+            String permission = calleePermission.replace(ANDROID_PERMISSION, "");
+            if (AppAccessService.permissionGidMap.containsKey(permission)) {
+                ArrayList<Integer> gids = AppAccessService.permissionGidMap.get(permission);
+                for (Integer gid : gids) {
+                    calleeGids.add(gid);
+                }
+            }
+        }
+
+        Log.i(TAG, "Callee gids: " + calleeGids);
+
+        // Blocked callee gids = calleeGids - callerGids
+        List<Integer> blockedCalleeGids = new ArrayList<Integer>();
+        for (Integer calleeGid : calleeGids) {
+            if (!callerGids.contains(calleeGid)) {
+                blockedCalleeGids.add(calleeGid);
+            }
+        }
+
+        Log.i(TAG, "Blocked callee gids: " + blockedCalleeGids);*/
+
+        List<String> blockedCalleePermissions = new ArrayList<String>();
+        for (String calleePermission : calleePermissions) {
+            if (!callerPermissions.contains(calleePermission)) {
+                blockedCalleePermissions.add(calleePermission);
+            }
+        }
+
+        Log.i(TAG, "Blocked callee permissions: " + blockedCalleePermissions);
     }
 }
