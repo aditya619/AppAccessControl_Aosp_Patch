@@ -1,0 +1,2 @@
+#! /bin/sh
+export WITH_DEXPREOPT=false && export DISABLE_DEXPREOPT=true && make -j 4 && export WITH_DEXPREOPT=false && export DISABLE_DEXPREOPT=true && make -j 4

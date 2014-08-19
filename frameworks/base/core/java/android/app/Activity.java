@@ -3210,7 +3210,11 @@ public class Activity extends ContextThemeWrapper
         	}
         	Log.i("AppAccessInActivity", "Caller Package: " + callerPackageName);
         	Log.i("AppAccessInActivity", "Callee Package: " + calleePackageName);
-        	if ("com.example.jp.jiu_jitsu".equals(callerPackageName) && "com.google.zxing.client.android".equals(calleePackageName)) {
+        	// Permission re-delegation block only for barcode scanner as a proof of concept
+        	// Replacing this check with more logical ones like:
+        	// if callee is system app and caller is not system app
+        	// & if callee and caller app are not same should be good
+        	if ("com.google.zxing.client.android".equals(calleePackageName)) {
         		try {
         			// Callee Permissions
 	        		PackageInfo callerPackageInfo = getPackageManager().getPackageInfo(callerPackageName, PackageManager.GET_PERMISSIONS);
@@ -3241,7 +3245,7 @@ public class Activity extends ContextThemeWrapper
 				} catch (android.os.RemoteException re) {
 					Log.e("AppAccessInActivity", "RemoteException while interacting with AppAccessService: " + re.getMessage());
 				} catch (Exception ex) {
-					
+
 				}
         	}
         	// *** 
