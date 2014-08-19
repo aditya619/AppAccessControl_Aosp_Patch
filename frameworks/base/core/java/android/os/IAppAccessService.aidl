@@ -15,5 +15,5 @@ interface IAppAccessService {
 	boolean updateBlockedPermissions(String pkgName, int uid, in List<String> blockedPermissions);
 	boolean isPermissionBlocked(String permission, int uid);
 	int[] getBlockedGids(String packageName);
-	void blockPermissionRedelegation(String callerApp, String calleeApp, in List<String> callerPermissions, in List<String> calleePermissions);
+	void blockPermissionRedelegation(String callerApp, String calleeApp, in List<String> callerPermissions, in List<String> calleePermissions, int calleeUid);
 }

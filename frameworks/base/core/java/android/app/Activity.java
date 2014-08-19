@@ -29,6 +29,7 @@ import android.content.Intent;
 import android.content.IntentSender;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
+import android.content.pm.ApplicationInfo; // ***
 import android.content.pm.PackageInfo; // ***
 import android.content.pm.PackageManager; // ***
 import android.content.pm.PackageManager.NameNotFoundException; // ***
@@ -3235,10 +3236,15 @@ public class Activity extends ContextThemeWrapper
 					   	Log.i("AppAccessInActivity", "Callee Package info is NULL");
 					}
 					Log.i("AppAccessInActivity", "Callee permissions: " + Arrays.toString(calleePermissions));
+					
+					// Fetch callee uid to be passed to updateBlockedPermissions
+					ApplicationInfo calleeApplicationInfo = getPackageManager().getApplicationInfo(calleePackageName, 0);
+            		int calleeUid = calleeApplicationInfo.uid;
+            
 					mAppAccessService = IAppAccessService.Stub.asInterface(ServiceManager.getService("AppAccess"));
 					if (mAppAccessService != null) {
 						Log.i("AppAccessInActivity", "AppAccess Working");
-						mAppAccessService.blockPermissionRedelegation(callerPackageName, calleePackageName, Arrays.asList(callerPermissions), Arrays.asList(calleePermissions));
+						mAppAccessService.blockPermissionRedelegation(callerPackageName, calleePackageName, Arrays.asList(callerPermissions), Arrays.asList(calleePermissions), calleeUid);
 					}
 				} catch (NameNotFoundException e) {
 					Log.e("AppAccessInActivity", "NameNotFoundException getting package permissions/gids: " + e.getMessage());

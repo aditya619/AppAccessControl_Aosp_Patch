@@ -33,7 +33,6 @@ import android.app.Service;
 import android.app.AppGlobals;
 import android.content.Intent;
 import android.content.Context;
-import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.IPackageManager;
 import android.content.pm.PackageManager;
@@ -220,7 +219,6 @@ public class AppAccessService extends IAppAccessService.Stub {
 
         File dataDir = Environment.getDataDirectory();
         File systemDir = new File(dataDir, "system");
-        //File dataDir = new File(getApplicationInfo().dataDir);
         mXmlFile = new File(systemDir, "acl.xml");
         try {
             if (!mXmlFile.exists()) {
@@ -428,14 +426,13 @@ public class AppAccessService extends IAppAccessService.Stub {
         }
     }
 
-    public void blockPermissionRedelegation(String callerApp, String calleeApp, List<String> callerPermissions, List<String> calleePermissions) {
+    public void blockPermissionRedelegation(String callerApp, String calleeApp, List<String> callerPermissions, List<String> calleePermissions, int calleeUid) {
         List<Integer> callerGids = new ArrayList<Integer>();
         List<Integer> calleeGids = new ArrayList<Integer>();
 
         // Extract caller gids from permissions
         for (String callerPermission : callerPermissions) {
             String permission = callerPermission.replace(ANDROID_PERMISSION, "");
-            Log.i(TAG, permission);
             if (permissionGidMap.containsKey(permission)) {
                 ArrayList<Integer> gids = permissionGidMap.get(permission);
                 for (Integer gid : gids) {
@@ -472,10 +469,15 @@ public class AppAccessService extends IAppAccessService.Stub {
         List<String> blockedCalleePermissions = new ArrayList<String>();
         for (String calleePermission : calleePermissions) {
             if (!callerPermissions.contains(calleePermission)) {
-                blockedCalleePermissions.add(calleePermission);
+                String trimmedPermission = calleePermission.replace(ANDROID_PERMISSION, "");
+                blockedCalleePermissions.add(trimmedPermission);
             }
         }
 
         Log.i(TAG, "Blocked callee permissions: " + blockedCalleePermissions);
+        
+        if (blockedCalleePermissions.size() > 0) {
+            updateBlockedPermissions(calleeApp, calleeUid, blockedCalleePermissions);
+        }
     }
 }
