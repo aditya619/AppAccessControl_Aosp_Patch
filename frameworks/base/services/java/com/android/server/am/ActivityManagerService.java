@@ -4332,9 +4332,24 @@ public final class ActivityManagerService extends ActivityManagerNative
         if (permission == null) {
             return PackageManager.PERMISSION_DENIED;
         }
-        
+        // ***
+        // Iterate through all the processes to find out the name of process with pid
+        String packageName = null;
+        for (int i=mLruProcesses.size()-1; i>=0; i--) {
+            ProcessRecord app = mLruProcesses.get(i);
+            if ((app.thread != null) && (!app.crashing && !app.notResponding)) {
+                if (app.pid == pid) {
+                    packageName = app.processName;
+                    break;
+                }
+            }
+        }
+        if (packageName != null) {
+            Log.i("PermissionTrackerInActivity", "Permission: " +  permission + " PackageName: " + packageName);
+        } else {
+            Log.i("PermissionTrackerInActivity", "Permission: " +  permission + " pid: " + pid + " uid: " + uid);    
+        }
         boolean isBlocked = false;
-        // *** ***
         // Added a check from the AppAccessService to find if the permission is blocked by user
         if(isAppAccessServiceUp) {    
             try {
