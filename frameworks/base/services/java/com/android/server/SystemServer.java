@@ -301,7 +301,7 @@ class ServerThread extends Thread {
         }
 
         if (factoryTest != SystemServer.FACTORY_TEST_LOW_LEVEL) {
-			// *** Adding AppAccessService ***
+            // *** Adding AppAccessService ***
             try {
                 Slog.i(TAG, "App Access Service");
                 ServiceManager.addService("AppAccess", AppAccessService.getInstance(context));
@@ -753,7 +753,7 @@ class ServerThread extends Thread {
             Slog.e(TAG, "Failure making AppAccessServiceLinkUp in ActivityManagerService", e);
         }
         // ***
-		
+        
         // For debug builds, log event loop stalls to dropbox for analysis.
         if (StrictMode.conditionallyEnableDebugLogging()) {
             Slog.i(TAG, "Enabled StrictMode for system server main thread.");

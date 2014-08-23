@@ -262,6 +262,7 @@ public final class ActivityManagerService extends ActivityManagerNative
     // *** Instance of Service
     IAppAccessService mAppAccessService;
     boolean isAppAccessServiceUp = false;
+    static final int FLAG_IGNORE_CHECK_PERMISSION = 1 << 20;
     
     /**
      * Description of a request to start a new activity, which has been held
@@ -4332,26 +4333,10 @@ public final class ActivityManagerService extends ActivityManagerNative
         if (permission == null) {
             return PackageManager.PERMISSION_DENIED;
         }
-        // ***
-        // Iterate through all the processes to find out the name of process with pid
-        String packageName = null;
-        for (int i=mLruProcesses.size()-1; i>=0; i--) {
-            ProcessRecord app = mLruProcesses.get(i);
-            if ((app.thread != null) && (!app.crashing && !app.notResponding)) {
-                if (app.pid == pid) {
-                    packageName = app.processName;
-                    break;
-                }
-            }
-        }
-        if (packageName != null) {
-            Log.i("PermissionTrackerInActivity", "Permission: " +  permission + " PackageName: " + packageName);
-        } else {
-            Log.i("PermissionTrackerInActivity", "Permission: " +  permission + " pid: " + pid + " uid: " + uid);    
-        }
+        
         boolean isBlocked = false;
         // Added a check from the AppAccessService to find if the permission is blocked by user
-        if(isAppAccessServiceUp) {    
+        if(isAppAccessServiceUp) {
             try {
                 isBlocked = mAppAccessService.isPermissionBlocked(permission, uid);
             } catch (RemoteException e) {  
@@ -4359,6 +4344,57 @@ public final class ActivityManagerService extends ActivityManagerNative
                 e.printStackTrace();
                 isBlocked = false;
             } 
+            // ***
+            // Iterate through all the processes to find out the name of process with pid
+            String packageName = null;
+            boolean isForeground = false;
+            for (int i=mLruProcesses.size()-1; i>=0; i--) {
+                ProcessRecord app = mLruProcesses.get(i);
+                if ((app.thread != null) && (!app.crashing && !app.notResponding)) {
+                    if (app.pid == pid) {
+                        packageName = app.processName;
+                        // ***
+                        // Check if this call is for a foreground by tracking the topActivity
+                        ActivityRecord topRecord = null;
+
+                        int pos = mMainStack.mHistory.size()-1;
+                        ActivityRecord next =
+                            pos >= 0 ? (ActivityRecord)mMainStack.mHistory.get(pos) : null;
+                        ActivityRecord top = null;
+                        TaskRecord curTask = null;
+                        if (pos >= 0) {
+                            pos--;
+                            next = pos >= 0 ? (ActivityRecord)mMainStack.mHistory.get(pos) : null;
+
+                            // Initialize state for next task if needed.
+                            if (top == null ||
+                                    (top.state == ActivityState.INITIALIZING
+                                        && top.task == next.task)) {
+                                top = next;
+                            }
+
+                            // If the next one is a different task, generate a new
+                            // TaskInfo entry for what we have.
+                            if (top != null && top.intent != null && top.intent.getComponent() != null && top.intent.getComponent().getPackageName() != null) {
+                                isForeground = top
+                                            .intent
+                                            .getComponent()
+                                            .getPackageName()
+                                            .equalsIgnoreCase(packageName);
+                                Log.i("Background/Foreground?", "Permission: " +  permission + " PackageName: " + packageName + " Is Foreground: " +  isForeground);    
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+            /*
+            if (packageName != null) {
+                Log.i("PermissionTrackerInActivity", "Permission: " +  permission + " PackageName: " + packageName + " Is Foreground: " +  isForeground);
+            } else {
+                Log.i("PermissionTrackerInActivity", "Permission: " +  permission + " pid: " + pid + " uid: " + uid);    
+            }
+            */
         }
         if(isBlocked) {
             Slog.e("BLOCKEDPERMISSION", "User blocked " + permission + " for process with uid " + uid );

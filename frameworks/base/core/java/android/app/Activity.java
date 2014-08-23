@@ -3202,59 +3202,59 @@ public class Activity extends ContextThemeWrapper
      */
     public void startActivityForResult(Intent intent, int requestCode) {
         if (mParent == null) {
-        	// *** Block Permission re-delegation
-        	String callerPackageName = getPackageName();
-        	String calleePackageName = null;
-        	ComponentName componentName = intent.resolveActivity(getPackageManager());
-        	if (componentName != null) {
-        		 calleePackageName = componentName.getPackageName();
-        	}
-        	Log.i("AppAccessInActivity", "Caller Package: " + callerPackageName);
-        	Log.i("AppAccessInActivity", "Callee Package: " + calleePackageName);
-        	// Permission re-delegation block only for barcode scanner as a proof of concept
-        	// Replacing this check with more logical ones like:
-        	// if callee is system app and caller is not system app
-        	// & if callee and caller app are not same should be good
-        	if ("com.google.zxing.client.android".equals(calleePackageName)) {
-        		try {
-        			// Callee Permissions
-	        		PackageInfo callerPackageInfo = getPackageManager().getPackageInfo(callerPackageName, PackageManager.GET_PERMISSIONS);
-					String[] callerPermissions = null;
-					if (callerPackageInfo != null) {
-					   	callerPermissions = callerPackageInfo.requestedPermissions;
-					} else {
-					   	Log.i("AppAccessInActivity", "Caller Package info is NULL");
-					}
-					Log.i("AppAccessInActivity", "Caller permissions: " + Arrays.toString(callerPermissions));
+            // *** Block Permission re-delegation
+            String callerPackageName = getPackageName();
+            String calleePackageName = null;
+            ComponentName componentName = intent.resolveActivity(getPackageManager());
+            if (componentName != null) {
+                 calleePackageName = componentName.getPackageName();
+            }
+            Log.i("AppAccessInActivity", "Caller Package: " + callerPackageName);
+            Log.i("AppAccessInActivity", "Callee Package: " + calleePackageName);
+            // Permission re-delegation block only for barcode scanner as a proof of concept
+            // Replacing this check with more logical ones like:
+            // if callee is system app and caller is not system app
+            // & if callee and caller app are not same should be good
+            if ("com.google.zxing.client.android".equals(calleePackageName)) {
+                try {
+                    // Callee Permissions
+                    PackageInfo callerPackageInfo = getPackageManager().getPackageInfo(callerPackageName, PackageManager.GET_PERMISSIONS);
+                    String[] callerPermissions = null;
+                    if (callerPackageInfo != null) {
+                        callerPermissions = callerPackageInfo.requestedPermissions;
+                    } else {
+                        Log.i("AppAccessInActivity", "Caller Package info is NULL");
+                    }
+                    Log.i("AppAccessInActivity", "Caller permissions: " + Arrays.toString(callerPermissions));
 
-					// Callee Permissions
-					PackageInfo calleePackageInfo = getPackageManager().getPackageInfo(calleePackageName, PackageManager.GET_PERMISSIONS);
-					String[] calleePermissions = null;
-					if (calleePackageInfo != null) {
-					   	calleePermissions = calleePackageInfo.requestedPermissions;
-					} else {
-					   	Log.i("AppAccessInActivity", "Callee Package info is NULL");
-					}
-					Log.i("AppAccessInActivity", "Callee permissions: " + Arrays.toString(calleePermissions));
-					
-					// Fetch callee uid to be passed to updateBlockedPermissions
-					ApplicationInfo calleeApplicationInfo = getPackageManager().getApplicationInfo(calleePackageName, 0);
-            		int calleeUid = calleeApplicationInfo.uid;
+                    // Callee Permissions
+                    PackageInfo calleePackageInfo = getPackageManager().getPackageInfo(calleePackageName, PackageManager.GET_PERMISSIONS);
+                    String[] calleePermissions = null;
+                    if (calleePackageInfo != null) {
+                        calleePermissions = calleePackageInfo.requestedPermissions;
+                    } else {
+                        Log.i("AppAccessInActivity", "Callee Package info is NULL");
+                    }
+                    Log.i("AppAccessInActivity", "Callee permissions: " + Arrays.toString(calleePermissions));
+                    
+                    // Fetch callee uid to be passed to updateBlockedPermissions
+                    ApplicationInfo calleeApplicationInfo = getPackageManager().getApplicationInfo(calleePackageName, 0);
+                    int calleeUid = calleeApplicationInfo.uid;
             
-					mAppAccessService = IAppAccessService.Stub.asInterface(ServiceManager.getService("AppAccess"));
-					if (mAppAccessService != null) {
-						Log.i("AppAccessInActivity", "AppAccess Working");
-						mAppAccessService.blockPermissionRedelegation(callerPackageName, calleePackageName, Arrays.asList(callerPermissions), Arrays.asList(calleePermissions), calleeUid);
-					}
-				} catch (NameNotFoundException e) {
-					Log.e("AppAccessInActivity", "NameNotFoundException getting package permissions/gids: " + e.getMessage());
-				} catch (android.os.RemoteException re) {
-					Log.e("AppAccessInActivity", "RemoteException while interacting with AppAccessService: " + re.getMessage());
-				} catch (Exception ex) {
+                    mAppAccessService = IAppAccessService.Stub.asInterface(ServiceManager.getService("AppAccess"));
+                    if (mAppAccessService != null) {
+                        Log.i("AppAccessInActivity", "AppAccess Working");
+                        mAppAccessService.blockPermissionRedelegation(callerPackageName, calleePackageName, Arrays.asList(callerPermissions), Arrays.asList(calleePermissions), calleeUid);
+                    }
+                } catch (NameNotFoundException e) {
+                    Log.e("AppAccessInActivity", "NameNotFoundException getting package permissions/gids: " + e.getMessage());
+                } catch (android.os.RemoteException re) {
+                    Log.e("AppAccessInActivity", "RemoteException while interacting with AppAccessService: " + re.getMessage());
+                } catch (Exception ex) {
 
-				}
-        	}
-        	// *** 
+                }
+            }
+            // *** 
 
             Instrumentation.ActivityResult ar =
                 mInstrumentation.execStartActivity(
