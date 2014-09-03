@@ -319,7 +319,6 @@ interface IPackageManager {
      * LinkUp to AppAccessService
      */
     void appAccessServiceLinkUp();
-    boolean isAppAccessServiceUpCheck(); // ***
 
     boolean hasSystemFeature(String name);
     
